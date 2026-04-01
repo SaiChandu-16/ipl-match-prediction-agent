@@ -30,7 +30,11 @@ from google.generativeai.types import FunctionDeclaration, Tool
 logger = logging.getLogger(__name__)
 
 # ── Gemini setup (FREE) ───────────────────────────────────────────────────────
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+def _configure_gemini():
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY is not set")
+    genai.configure(api_key=api_key)
 
 HEADERS = {
     "User-Agent": (
@@ -560,6 +564,8 @@ def analyze_match(
     """
     if not match_date:
         match_date = datetime.date.today().isoformat()
+
+    _configure_gemini()
 
     model = genai.GenerativeModel(
         model_name="gemini-1.5-flash",
