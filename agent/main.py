@@ -6,7 +6,13 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
-from agent.ipl_agent import run_agent
+
+try:
+    # Local package layout: uvicorn agent.main:app
+    from agent.ipl_agent import analyze_match
+except ModuleNotFoundError:
+    # Docker image layout: agent/ contents copied directly into /app
+    from ipl_agent import analyze_match
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -49,7 +55,7 @@ async def analyse_sync(req: MatchRequest):
     def on_tool(name, args):
         pass
     try:
-        result = run_agent(
+        result = analyze_match(
             req.batting_team, req.bowling_team, req.venue,
             req.toss_winner, req.toss_decision, req.match_date or "", on_tool
         )
@@ -65,7 +71,7 @@ def _run(rid: str, req: MatchRequest):
     try:
         def on_tool(name, args):
             _reports[rid].setdefault("tools_called", []).append({"tool": name, "args": args})
-        result = run_agent(
+        result = analyze_match(
             req.batting_team, req.bowling_team, req.venue,
             req.toss_winner, req.toss_decision, req.match_date or "", on_tool
         )
